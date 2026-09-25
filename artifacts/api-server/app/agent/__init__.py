@@ -1,0 +1,1 @@
+"""Gemini tool-calling agent."""

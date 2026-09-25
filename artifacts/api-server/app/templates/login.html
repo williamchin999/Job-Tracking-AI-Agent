@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#111c2a">
+    <title>{{ page_title }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body class="setup-page">
+    <main class="setup-wrap">
+      <a class="brand setup-brand" href="/">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>threadline</span>
+      </a>
+      <section class="setup-hero">
+        <p class="eyebrow intro-eyebrow">GETTING STARTED</p>
+        <h1>Connect your<br>Google workspace.</h1>
+        <p class="intro-copy">Threadline uses Google’s official sign-in and APIs to read your Gmail and spreadsheets. Your credentials stay on the server, and sheet changes always wait for your approval.</p>
+      </section>
+
+      {% if google_error %}
+      <div class="notice notice-error" role="alert"><span class="notice-mark">!</span><p>{{ google_error }}</p></div>
+      {% endif %}
+
+      <section class="setup-panel">
+        <div class="setup-panel-title">
+          <div><p class="eyebrow">CONNECTION CHECKLIST</p><h2>Before you connect</h2></div>
+          <span class="setup-panel-count">01 — 03</span>
+        </div>
+        <div class="long-check">
+          <span class="long-check-number {% if google_configured %}ready-number{% endif %}">{% if google_configured %}✓{% else %}01{% endif %}</span>
+          <div><strong>Google OAuth credentials</strong><p>Add <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> to Replit Secrets. Enable the Gmail, Google Sheets, and Google Drive APIs in the Google Cloud project.</p></div>
+          <span class="status-pill {% if google_configured %}status-ready{% else %}status-needed{% endif %}">{% if google_configured %}READY{% else %}NEEDED{% endif %}</span>
+        </div>
+        <div class="long-check">
+          <span class="long-check-number {% if gemini_configured %}ready-number{% endif %}">{% if gemini_configured %}✓{% else %}02{% endif %}</span>
+          <div><strong>Gemini API key</strong><p>Add <code>GEMINI_API_KEY</code> to Replit Secrets. This app uses your own Google AI Studio key and model access.</p></div>
+          <span class="status-pill {% if gemini_configured %}status-ready{% else %}status-needed{% endif %}">{% if gemini_configured %}READY{% else %}NEEDED{% endif %}</span>
+        </div>
+        <div class="long-check">
+          <span class="long-check-number">03</span>
+          <div><strong>Authorized redirect URI</strong><p>In Google Cloud, add this exact URL to your OAuth client’s authorized redirect URIs:</p>
+            <div class="callback-box">
+              <code id="callback-url">{{ redirect_uri or "Set GOOGLE_REDIRECT_URI to the app's /auth/google/callback URL" }}</code>
+              {% if redirect_uri %}<button class="copy-button" type="button" data-copy-target="callback-url" aria-label="Copy callback URL">Copy</button>{% endif %}
+            </div>
+            <p class="callback-help">Set the same value as <code>GOOGLE_REDIRECT_URI</code> in Replit Secrets. Add separate development and production OAuth clients if you use both domains.</p>
+          </div>
+          <span class="status-pill status-needed">CHECK</span>
+        </div>
+
+        <div class="scope-note">
+          <span class="scope-lock" aria-hidden="true">⌑</span>
+          <p><strong>Requested access</strong><br>Gmail read-only, Sheets read/write, Drive spreadsheet lookup, and basic account identity. The agent itself only receives registered tools, never your OAuth tokens.</p>
+        </div>
+        {% if google_configured %}
+        <a class="primary-action" href="/auth/google">Continue with Google <span aria-hidden="true">→</span></a>
+        {% else %}
+        <button class="primary-action is-disabled" type="button" disabled>Google credentials needed <span aria-hidden="true">→</span></button>
+        {% endif %}
+        {% if google_email %}
+        <p class="connected-as">Currently connected as <strong>{{ google_email }}</strong>. <a href="/">Return to Threadline</a></p>
+        {% endif %}
+      </section>
+      <a class="back-link" href="/">← Back to your workspace</a>
+      <p class="setup-footnote">No Gmail or Sheets data is simulated. The app becomes active after you configure credentials and connect an account.</p>
+    </main>
+    <script>
+      document.querySelectorAll("[data-copy-target]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const target = document.getElementById(button.dataset.copyTarget);
+          try {
+            await navigator.clipboard.writeText(target.textContent.trim());
+            button.textContent = "Copied";
+            window.setTimeout(() => button.textContent = "Copy", 1400);
+          } catch {
+            button.textContent = "Select URL";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
