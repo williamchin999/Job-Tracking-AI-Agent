@@ -1,0 +1,761 @@
+Build and deploy a working AI agent web application using Python that runs on the Replit Free/Starter plan.
+
+The application should be a lightweight personal "Gemini Enterprise" style AI agent that can connect to Google Gmail and Google Sheets, understand information across them, and propose actions.
+
+IMPORTANT:
+This must be a WORKING application, not a conceptual demo.
+
+Prioritize reliability and simplicity over adding unnecessary features.
+
+Do not use Node.js.
+
+Do not use Next.js.
+
+Use Python for the backend and application logic.
+
+==================================================
+TECH STACK
+==========
+
+Backend:
+
+* Python 3.11+
+* FastAPI
+* Uvicorn
+* Pydantic
+
+Frontend:
+
+* Jinja2 templates
+* HTML
+* CSS
+* Vanilla JavaScript
+
+Do NOT build a separate React application.
+
+AI:
+
+* Google Gemini API
+* Use Gemini function/tool calling
+
+Google:
+
+* Google OAuth 2.0
+* Gmail API
+* Google Sheets API
+
+Database:
+
+* SQLite for the MVP
+* SQLAlchemy
+* Structure the database so PostgreSQL can be added later
+
+Deployment:
+
+* Replit Free/Starter
+* One Replit application
+* One Python process
+* No Docker
+* No Redis
+* No background workers
+* No microservices
+
+==================================================
+APPLICATION GOAL
+================
+
+Build a personal AI agent that can perform this workflow:
+
+User:
+
+"Find recruiter emails from the last 7 days and add new opportunities to my job application spreadsheet."
+
+The agent should:
+
+1. Search Gmail
+2. Read relevant emails
+3. Identify potential job opportunities
+4. Extract company, role, recruiter, email, date, and status
+5. Find the user's Job Applications Google Sheet
+6. Read existing rows
+7. Detect likely duplicates
+8. Show proposed changes
+9. Ask the user for approval
+10. Only after approval, update Google Sheets
+11. Report what was changed
+
+The application should feel like a small personal AI assistant rather than a basic chatbot.
+
+==================================================
+PROJECT STRUCTURE
+=================
+
+Create this structure:
+
+app/
+├── main.py
+├── config.py
+├── database.py
+├── models.py
+├── schemas.py
+│
+├── agent/
+│   ├── agent.py
+│   ├── prompts.py
+│   └── tools.py
+│
+├── google/
+│   ├── auth.py
+│   ├── gmail.py
+│   └── sheets.py
+│
+├── routes/
+│   ├── chat.py
+│   ├── auth.py
+│   └── actions.py
+│
+├── templates/
+│   ├── index.html
+│   └── login.html
+│
+└── static/
+├── style.css
+└── app.js
+
+Also create:
+
+requirements.txt
+.env.example
+README.md
+.gitignore
+
+==================================================
+ENVIRONMENT VARIABLES
+=====================
+
+Create .env.example:
+
+GEMINI_API_KEY=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=
+SECRET_KEY=
+DATABASE_URL=sqlite:///./agent.db
+
+Never hardcode secrets.
+
+Never expose secrets to the browser.
+
+==================================================
+GOOGLE OAUTH
+============
+
+Implement Google OAuth 2.0.
+
+The user should see:
+
+"Connect Google Account"
+
+When clicked, redirect to Google OAuth.
+
+Request only the required scopes:
+
+Gmail read access
+Google Sheets read/write access
+
+Use OAuth authorization code flow.
+
+Store credentials server-side.
+
+Do not send Google OAuth tokens to the frontend.
+
+Handle token refresh.
+
+After successful authentication, redirect back to the application.
+
+Show:
+
+Google Account
+✓ Connected
+
+Gmail
+✓ Connected
+
+Google Sheets
+✓ Connected
+
+Also provide:
+
+Disconnect Google Account
+
+==================================================
+GMAIL TOOLS
+===========
+
+Create Python functions/tools:
+
+search_gmail
+get_email
+
+search_gmail should accept:
+
+query
+max_results
+
+Example:
+
+query:
+newer_than:7d
+
+It should return structured data:
+
+{
+"id": "...",
+"thread_id": "...",
+"sender": "...",
+"subject": "...",
+"date": "...",
+"snippet": "..."
+}
+
+get_email should return:
+
+sender
+recipient
+subject
+date
+body
+thread_id
+
+Use the official Gmail API.
+
+Do not scrape Gmail.
+
+==================================================
+GOOGLE SHEETS TOOLS
+===================
+
+Create:
+
+find_spreadsheet
+read_sheet
+append_sheet_row
+update_sheet
+
+find_spreadsheet should allow the user/agent to identify a spreadsheet by name.
+
+read_sheet should accept:
+
+spreadsheet_id
+range
+
+Example:
+
+A1:H100
+
+append_sheet_row should accept:
+
+spreadsheet_id
+range
+values
+
+update_sheet should accept:
+
+spreadsheet_id
+range
+values
+
+Use the official Google Sheets API.
+
+==================================================
+AI AGENT
+========
+
+Create a proper tool-calling AI agent.
+
+Use Gemini's function/tool calling.
+
+The agent should have access ONLY to explicitly registered tools.
+
+The agent must NOT be allowed to:
+
+* execute Python
+* execute shell commands
+* make arbitrary HTTP requests
+* access arbitrary files
+* directly access OAuth credentials
+
+Available tools:
+
+READ ONLY:
+
+search_gmail
+get_email
+find_spreadsheet
+read_sheet
+
+WRITE:
+
+append_sheet_row
+update_sheet
+
+The AI can automatically execute READ tools.
+
+WRITE tools require human approval.
+
+==================================================
+AGENT LOOP
+==========
+
+Implement the following loop:
+
+1. User sends a message
+2. Python backend sends message to Gemini
+3. Gemini determines whether a tool is necessary
+4. If a READ tool is requested:
+
+   * validate arguments
+   * execute tool
+   * return result to Gemini
+5. Gemini can request another tool
+6. Continue until Gemini produces a final answer
+7. Return final answer to frontend
+
+For WRITE tools:
+
+1. Gemini requests the write operation
+2. Backend validates the request
+3. DO NOT execute it
+4. Create an approval request
+5. Return proposed action to frontend
+6. User clicks Approve
+7. Backend executes the write
+8. Return result to user
+
+==================================================
+HUMAN APPROVAL
+==============
+
+Any modification to Google Sheets requires explicit user approval.
+
+Example:
+
+Agent:
+
+"I found 3 new job opportunities."
+
+Then display:
+
+---
+
+PROPOSED GOOGLE SHEETS CHANGES
+
+Spreadsheet:
+Job Applications
+
+New rows:
+
+Tesla
+Software Engineer
+Recruiter Contacted
+September 25, 2026
+
+Meta
+Frontend Engineer
+Recruiter Contacted
+September 24, 2026
+
+Waymo
+Software Engineer
+Recruiter Contacted
+September 23, 2026
+
+---
+
+[ APPROVE CHANGES ] [ REJECT ]
+
+Do not modify Google Sheets until APPROVE CHANGES is clicked.
+
+==================================================
+CHAT UI
+=======
+
+Create a simple modern web interface.
+
+Header:
+
+AI Agent
+
+Connection status:
+
+Google
+✓ Connected
+
+Main area:
+
+Chat messages
+
+Bottom:
+
+[ Ask the AI anything... ]
+
+[Send]
+
+Tool activity should be visible.
+
+Example:
+
+User:
+Find recruiter emails from the last week.
+
+Agent:
+
+Searching Gmail...
+
+✓ Found 8 relevant emails
+
+Reading your Job Applications spreadsheet...
+
+✓ Found 27 existing applications
+
+Comparing applications...
+
+✓ Found 3 potential new applications
+
+[Review Proposed Changes]
+
+Clicking Review Proposed Changes displays the approval UI.
+
+==================================================
+JOB APPLICATION INTELLIGENCE
+============================
+
+The agent should be able to recognize likely recruiter/job emails.
+
+Extract:
+
+company
+job title
+recruiter name
+recruiter email
+date
+job status
+source email
+
+When comparing against the spreadsheet:
+
+Consider duplicates based on:
+
+company + job title
+
+Do not blindly add duplicate rows.
+
+If uncertain, show the user the potential duplicate rather than automatically adding it.
+
+==================================================
+EXAMPLE COMMANDS
+================
+
+The following should work:
+
+"Find recruiter emails from the last 7 days."
+
+"Show me the jobs recruiters contacted me about this week."
+
+"Find my Job Applications spreadsheet."
+
+"Show me the last 20 rows in my Job Applications spreadsheet."
+
+"Find recruiter emails and compare them against my job application spreadsheet."
+
+"Add the new jobs to my spreadsheet."
+
+"How many companies contacted me this month?"
+
+"Find all recruiter emails from Tesla."
+
+"Summarize my recent recruiter emails."
+
+==================================================
+DATABASE
+========
+
+Use SQLite for the MVP.
+
+Create tables/models for:
+
+User
+GoogleCredential
+Conversation
+Message
+ApprovalRequest
+
+Keep the schema simple.
+
+Do not build a complex memory system.
+
+Store conversations so refreshing the page does not lose the current chat.
+
+==================================================
+SECURITY
+========
+
+Implement:
+
+* OAuth authentication
+* server-side sessions
+* secure cookies
+* CSRF protection where appropriate
+* input validation
+* tool argument validation
+* authorization checks
+* secret management
+* no credentials in frontend
+* no credentials in Git
+* no arbitrary code execution
+
+The AI agent must only call registered tools.
+
+Never trust tool arguments generated by the model.
+
+Validate all parameters with Pydantic.
+
+==================================================
+ERROR HANDLING
+==============
+
+Handle:
+
+Google OAuth errors
+Expired tokens
+Gmail API errors
+Google Sheets API errors
+Gemini API errors
+Invalid spreadsheet IDs
+Invalid ranges
+Missing permissions
+Rate limits
+Network errors
+
+Show understandable error messages.
+
+Never expose stack traces or secrets to users.
+
+Log detailed errors server-side.
+
+==================================================
+REPLIT REQUIREMENTS
+===================
+
+The application MUST work on Replit Free/Starter.
+
+Use:
+
+Python
+FastAPI
+SQLite
+Jinja2
+Vanilla JavaScript
+
+Avoid:
+
+Node.js
+React
+Docker
+Redis
+Celery
+background workers
+microservices
+Kubernetes
+external databases
+paid infrastructure
+
+Use the Replit filesystem only for temporary/local application files.
+
+Use SQLite for MVP persistence.
+
+The server must listen on:
+
+0.0.0.0:$PORT
+
+Do not hardcode the port.
+
+==================================================
+REPLIT RUN CONFIGURATION
+========================
+
+Configure the Replit application so the Run command is equivalent to:
+
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+Make sure this works.
+
+==================================================
+DEPENDENCIES
+============
+
+Create a requirements.txt containing only necessary dependencies.
+
+At minimum consider:
+
+fastapi
+uvicorn
+jinja2
+python-dotenv
+pydantic
+sqlalchemy
+google-api-python-client
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-generativeai
+
+Use current compatible versions.
+
+Do not install unnecessary frameworks.
+
+==================================================
+README
+======
+
+Create a detailed README explaining:
+
+1. What the application does
+2. Architecture
+3. How to create a Google Cloud project
+4. How to enable Gmail API
+5. How to enable Google Sheets API
+6. How to configure OAuth consent screen
+7. How to create Google OAuth credentials
+8. How to configure the redirect URI for Replit
+9. How to add environment variables
+10. How to obtain a Gemini API key
+11. How to run the application
+12. How to deploy on Replit
+13. Security considerations
+14. How human approval works
+
+==================================================
+DEVELOPMENT APPROACH
+====================
+
+Although this is one prompt, implement the application incrementally internally.
+
+First create the application skeleton.
+
+Then implement:
+
+1. FastAPI application
+2. Frontend
+3. Gemini chat
+4. Google OAuth
+5. Gmail integration
+6. Sheets integration
+7. Gemini tool calling
+8. Human approval
+9. Job application workflow
+10. Error handling
+11. Deployment configuration
+
+After implementing each major component:
+
+* run the application
+* check for Python errors
+* check imports
+* check TypeScript/JavaScript errors if applicable
+* test endpoints
+* fix errors before continuing
+
+Do not leave placeholder functions such as:
+
+TODO
+pass
+raise NotImplementedError
+
+unless they are genuinely optional.
+
+==================================================
+IMPORTANT: NO FAKE FUNCTIONALITY
+================================
+
+Do not simulate Gmail data.
+
+Do not simulate Google Sheets data.
+
+Do not create fake AI responses.
+
+The application must use the real:
+
+Gmail API
+Google Sheets API
+Gemini API
+
+If credentials are missing, show a setup message rather than fake data.
+
+==================================================
+DEPLOYMENT CHECK
+================
+
+Before finishing:
+
+1. Install dependencies.
+2. Start the FastAPI server.
+3. Verify the home page loads.
+4. Verify the health endpoint:
+
+GET /health
+
+returns:
+
+{
+"status": "ok"
+}
+
+5. Verify the application binds to 0.0.0.0.
+6. Verify PORT comes from the environment.
+7. Verify no secrets are hardcoded.
+8. Verify the production server starts successfully.
+9. Fix all startup errors.
+10. Make the Replit project publishable.
+
+==================================================
+HEALTH ENDPOINT
+===============
+
+Implement:
+
+GET /health
+
+Return:
+
+{
+"status": "ok"
+}
+
+==================================================
+FINAL REQUIREMENT
+=================
+
+Do not stop after generating a plan.
+
+Actually create the application files.
+
+Actually implement the backend.
+
+Actually implement the frontend.
+
+Actually implement the Gemini integration.
+
+Actually implement Google OAuth.
+
+Actually implement Gmail.
+
+Actually implement Google Sheets.
+
+Actually implement the approval workflow.
+
+Actually test the application.
+
+If a Google credential or API key cannot be generated automatically, create the exact setup instructions and environment variables needed for me to finish the connection.
+
+Keep the implementation small enough to work reliably on Replit Free/Starter.
