@@ -22,3 +22,8 @@ timeoutMs = 20000
 [nix]
 channel = "stable-25_05"
 packages = ["cargo", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
+
+[userenv]
+
+[userenv.development]
+GOOGLE_REDIRECT_URI = "https://f0a28c5d-84f3-4760-b951-92149791bd23-00-3erif0g82b88b.spock.replit.dev/auth/google/callback"

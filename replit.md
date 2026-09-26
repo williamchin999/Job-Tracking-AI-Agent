@@ -1,45 +1,57 @@
-# [Project name]
+# Threadline Personal AI Agent
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Threadline is a private Gmail and Google Sheets workbench that uses Gemini to find, summarize, and prepare spreadsheet changes for explicit approval.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `uvicorn app.main:app --app-dir artifacts/api-server --reload` — run the Python app locally
+- `python -m compileall -q artifacts/api-server/app` — check Python syntax
+- `python -m pytest` — run tests when present
+- The managed artifact workflow runs Uvicorn on the injected `PORT`.
+- Required secrets: `SESSION_SECRET`, `GEMINI_API_KEY`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET`.
+- Required development environment variable: `GOOGLE_REDIRECT_URI`.
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Python 3.13, FastAPI, Uvicorn, Jinja2, and vanilla JavaScript
+- SQLite with SQLAlchemy
+- Google OAuth plus Gmail, Sheets, and Drive APIs
+- Gemini function calling through the user's own `GEMINI_API_KEY`
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/api-server/app/main.py` — FastAPI app, page routes, and lifespan
+- `artifacts/api-server/app/routes/` — OAuth, chat, and approval endpoints
+- `artifacts/api-server/app/agent/` — Gemini prompt, tool declarations, and execution loop
+- `artifacts/api-server/app/google/` — encrypted OAuth credentials and Google API clients
+- `artifacts/api-server/app/templates/` — Jinja2 pages
+- `artifacts/api-server/app/static/` — responsive CSS and vanilla JavaScript
+- `artifacts/api-server/app/models.py` — SQLite/SQLAlchemy data model
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Google OAuth belongs to the app so each user authorizes their own Gmail and Sheets access.
+- OAuth token JSON is encrypted with a key derived from `SESSION_SECRET` and the user id before storage.
+- Gmail and Sheets writes are separate registered tools and are staged as approval records first; only approval routes call write APIs.
+- Sheet writes are omitted from Gemini's available tools unless the current user message explicitly asks for a spreadsheet change.
+- The app uses SQLite to match the requested stack; production deployments should use persistent database storage if restart-safe history is required.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Users connect Google, ask Threadline to search Gmail or inspect Sheets, and review proposed spreadsheet changes in the workbench before approving or rejecting them.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Use the user's own Gemini API key.
+- Keep spreadsheet writes approval-gated.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Add the exact development callback URL shown on `/login` to the Google OAuth client.
+- Enable Gmail API, Google Sheets API, and Google Drive API in the same Google Cloud project.
+- Do not expose OAuth credentials or Gemini keys in source, logs, or chat.
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Python dependency declarations are in the root `pyproject.toml`; `uv.lock` records the installed environment.
+- The API artifact service definition is managed through `artifacts/api-server/.replit-artifact/artifact.toml`.

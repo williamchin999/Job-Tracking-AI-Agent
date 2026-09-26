@@ -34,12 +34,12 @@ def load_settings() -> Settings:
 
     return Settings(
         gemini_api_key=os.getenv("GEMINI_API_KEY"),
-        gemini_model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash"),
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
         google_client_id=os.getenv("GOOGLE_CLIENT_ID"),
         google_client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
         google_redirect_uri=os.getenv("GOOGLE_REDIRECT_URI") or None,
         session_secret=session_secret,
-        database_url=os.getenv("DATABASE_URL", "sqlite:///./agent.db"),
+        database_url=os.getenv("THREADLINE_DATABASE_URL", "sqlite:///./agent.db"),
         secure_cookies=os.getenv("APP_ENV", "development").lower() != "development",
     )
 
